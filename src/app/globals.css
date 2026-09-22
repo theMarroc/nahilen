@@ -1,0 +1,124 @@
+@import "tailwindcss";
+
+/* ---------------------------------------------------------------------------
+   Nahilén — sistema de diseño
+   Paleta y tipografías definidas por la marca (ver /brand/template_nahilen.jpeg)
+   --------------------------------------------------------------------------- */
+@theme {
+  --color-crema: #f2e9de;
+  --color-crema-claro: #faf6f1;
+  --color-beige: #e0c9a6;
+  --color-terracota: #c97a4e;
+  --color-terracota-oscuro: #a75f38;
+  --color-mostaza: #e1b43c;
+  --color-mostaza-oscuro: #c99b25;
+  --color-oliva: #7a8a5a;
+  --color-marron: #5b3e2a;
+  --color-arena: #a88d74;
+  --color-carbon: #2f2f2b;
+
+  --font-display: var(--font-playfair), Georgia, serif;
+  --font-sans: var(--font-lato), ui-sans-serif, system-ui, sans-serif;
+
+  --radius-marca: 0.25rem;
+  --shadow-suave: 0 1px 2px rgb(47 47 43 / 0.04), 0 8px 24px -12px rgb(47 47 43 / 0.12);
+  --shadow-tarjeta: 0 2px 4px rgb(47 47 43 / 0.05), 0 12px 32px -16px rgb(47 47 43 / 0.18);
+}
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    background-color: var(--color-crema-claro);
+    color: var(--color-carbon);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4 {
+    font-family: var(--font-display);
+    font-weight: 500;
+    letter-spacing: -0.01em;
+  }
+
+  ::selection {
+    background-color: var(--color-mostaza);
+    color: var(--color-carbon);
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-terracota);
+    outline-offset: 2px;
+  }
+}
+
+@utility contenedor {
+  margin-inline: auto;
+  width: 100%;
+  max-width: 78rem;
+  padding-inline: 1rem;
+  @media (min-width: 640px) {
+    padding-inline: 1.5rem;
+  }
+  @media (min-width: 1024px) {
+    padding-inline: 2.5rem;
+  }
+}
+
+/* Cabecera de sección: "Colecciones destacadas" con la 2da palabra en cursiva */
+@utility titulo-seccion {
+  font-family: var(--font-display);
+  font-size: clamp(1.75rem, 1.2rem + 2vw, 2.75rem);
+  line-height: 1.1;
+}
+
+@utility linea-decorativa {
+  display: block;
+  width: 3.5rem;
+  height: 2px;
+  background-color: var(--color-mostaza);
+}
+
+/* Oculta el scrollbar en carruseles horizontales */
+@utility sin-scrollbar {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+@keyframes aparecer {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@utility aparecer {
+  animation: aparecer 0.5s ease-out both;
+}
+
+@keyframes deslizar {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+/* Carrusel continuo de fotos (se duplica la lista para que el loop no corte) */
+@utility marquesina {
+  animation: deslizar 45s linear infinite;
+  width: max-content;
+}
