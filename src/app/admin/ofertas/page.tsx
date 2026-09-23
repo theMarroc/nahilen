@@ -3,6 +3,7 @@ import Link from "next/link";
 import { Pencil, Trash2, X } from "lucide-react";
 
 import { alternarOferta, borrarOferta } from "@/actions/admin/ofertas";
+import { FormularioConfirmado } from "@/components/admin/formulario-confirmado";
 import { FormularioOferta } from "@/components/admin/formulario-oferta";
 import { Interruptor } from "@/components/admin/interruptor";
 import { PanelAdmin, SinDatos, TituloAdmin } from "@/components/admin/piezas";
@@ -106,7 +107,10 @@ export default async function OfertasAdmin({
                       <Pencil className="h-4 w-4" />
                     </Link>
 
-                    <form action={borrarOferta}>
+                    <FormularioConfirmado
+                      accion={borrarOferta}
+                      mensaje={`¿Borrar la oferta "${oferta.name}"? Si solo querés pausarla, apagala con el interruptor.`}
+                    >
                       <input type="hidden" name="id" value={oferta.id} />
                       <button
                         type="submit"
@@ -115,7 +119,7 @@ export default async function OfertasAdmin({
                       >
                         <Trash2 className="h-4 w-4" />
                       </button>
-                    </form>
+                    </FormularioConfirmado>
                   </div>
                 </li>
               ))}

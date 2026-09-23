@@ -13,6 +13,7 @@ import {
   guardarFaq,
 } from "@/actions/admin/contenido";
 import { FormularioAdmin } from "@/components/admin/formulario-admin";
+import { FormularioConfirmado } from "@/components/admin/formulario-confirmado";
 import { Interruptor } from "@/components/admin/interruptor";
 import { PanelAdmin, SinDatos, TituloAdmin } from "@/components/admin/piezas";
 import { SubidorImagen } from "@/components/admin/subidor";
@@ -259,7 +260,11 @@ export default async function ContenidoAdmin() {
                   </CampoConEtiqueta>
                 </FormularioAdmin>
 
-                <form action={borrarBeneficio} className="mb-1">
+                <FormularioConfirmado
+                  accion={borrarBeneficio}
+                  mensaje={`¿Sacar "${beneficio.title}" de la barra de beneficios?`}
+                  className="mb-1"
+                >
                   <input type="hidden" name="id" value={beneficio.id} />
                   <button
                     type="submit"
@@ -268,7 +273,7 @@ export default async function ContenidoAdmin() {
                   >
                     <Trash2 className="h-4 w-4" />
                   </button>
-                </form>
+                </FormularioConfirmado>
               </div>
             ))}
 
@@ -322,7 +327,10 @@ export default async function ContenidoAdmin() {
                     activo={pregunta.is_active}
                     etiqueta={`Mostrar la pregunta ${pregunta.question}`}
                   />
-                  <form action={borrarFaq}>
+                  <FormularioConfirmado
+                    accion={borrarFaq}
+                    mensaje={`¿Borrar la pregunta "${pregunta.question}"? Si solo querés ocultarla, apagala con el interruptor.`}
+                  >
                     <input type="hidden" name="id" value={pregunta.id} />
                     <button
                       type="submit"
@@ -331,7 +339,7 @@ export default async function ContenidoAdmin() {
                     >
                       <Trash2 className="h-4 w-4" />
                     </button>
-                  </form>
+                  </FormularioConfirmado>
                 </div>
 
                 <FormularioAdmin
@@ -405,7 +413,10 @@ export default async function ContenidoAdmin() {
                     <span className="min-w-0 truncate text-xs text-carbon/70">
                       {foto.caption || "Sin texto"}
                     </span>
-                    <form action={borrarFotoGaleria}>
+                    <FormularioConfirmado
+                      accion={borrarFotoGaleria}
+                      mensaje="¿Sacar esta foto del carrusel?"
+                    >
                       <input type="hidden" name="id" value={foto.id} />
                       <button
                         type="submit"
@@ -414,7 +425,7 @@ export default async function ContenidoAdmin() {
                       >
                         <Trash2 className="h-3.5 w-3.5" />
                       </button>
-                    </form>
+                    </FormularioConfirmado>
                   </div>
                 </li>
               ))}

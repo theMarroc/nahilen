@@ -5,6 +5,7 @@ import { CheckCircle2, ExternalLink, Trash2 } from "lucide-react";
 
 import { borrarProducto, guardarProducto } from "@/actions/admin/productos";
 import { FormularioAdmin } from "@/components/admin/formulario-admin";
+import { FormularioConfirmado } from "@/components/admin/formulario-confirmado";
 import { PanelAdmin, TituloAdmin } from "@/components/admin/piezas";
 import { GestorImagenes } from "@/components/admin/subidor";
 import { estilosBoton } from "@/components/ui/boton";
@@ -244,13 +245,16 @@ export default async function EditorProducto({
           texto="Esto lo elimina para siempre, junto con sus fotos. Si solo querés dejar de venderlo, usá el interruptor de arriba."
           className="mt-10 border-terracota/30"
         >
-          <form action={borrarProducto}>
+          <FormularioConfirmado
+            accion={borrarProducto}
+            mensaje={`¿Borrar "${producto.name}" para siempre, con sus fotos? Si solo querés dejar de venderlo, apagá "Visible" en la lista de productos.`}
+          >
             <input type="hidden" name="id" value={producto.id} />
             <button type="submit" className={estilosBoton("peligro", "sm")}>
               <Trash2 className="h-4 w-4" />
               Borrar definitivamente
             </button>
-          </form>
+          </FormularioConfirmado>
         </PanelAdmin>
       ) : null}
     </>

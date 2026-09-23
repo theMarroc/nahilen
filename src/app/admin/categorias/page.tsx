@@ -9,6 +9,7 @@ import {
   guardarCategoria,
 } from "@/actions/admin/categorias";
 import { FormularioAdmin } from "@/components/admin/formulario-admin";
+import { FormularioConfirmado } from "@/components/admin/formulario-confirmado";
 import { Interruptor } from "@/components/admin/interruptor";
 import { PanelAdmin, SinDatos, TituloAdmin } from "@/components/admin/piezas";
 import { SubidorImagen } from "@/components/admin/subidor";
@@ -36,6 +37,13 @@ export default async function CategoriasAdmin({
   const enEdicion = categorias.find((c) => c.id === editar) ?? null;
   const contar = (id: string) =>
     productos.filter((p) => p.category_id === id).length;
+
+  const avisoProductos = (cantidad: number) =>
+    cantidad === 0
+      ? ""
+      : cantidad === 1
+        ? " Su producto no se borra: queda sin categoría."
+        : ` Sus ${cantidad} productos no se borran: quedan sin categoría.`;
 
   return (
     <>
@@ -96,7 +104,10 @@ export default async function CategoriasAdmin({
                       <Pencil className="h-4 w-4" />
                     </Link>
 
-                    <form action={borrarCategoria}>
+                    <FormularioConfirmado
+                      accion={borrarCategoria}
+                      mensaje={`¿Borrar la categoría "${categoria.name}"?${avisoProductos(contar(categoria.id))}`}
+                    >
                       <input type="hidden" name="id" value={categoria.id} />
                       <button
                         type="submit"
@@ -105,7 +116,7 @@ export default async function CategoriasAdmin({
                       >
                         <Trash2 className="h-4 w-4" />
                       </button>
-                    </form>
+                    </FormularioConfirmado>
                   </div>
                 </li>
               ))}

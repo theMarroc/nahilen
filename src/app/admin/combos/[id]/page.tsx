@@ -6,6 +6,7 @@ import { CheckCircle2, ExternalLink, Trash2 } from "lucide-react";
 import { borrarCombo, guardarCombo } from "@/actions/admin/combos";
 import { EditorItemsCombo } from "@/components/admin/editor-items-combo";
 import { FormularioAdmin } from "@/components/admin/formulario-admin";
+import { FormularioConfirmado } from "@/components/admin/formulario-confirmado";
 import { PanelAdmin, SinDatos, TituloAdmin } from "@/components/admin/piezas";
 import { SubidorImagen } from "@/components/admin/subidor";
 import { estilosBoton } from "@/components/ui/boton";
@@ -175,13 +176,16 @@ export default async function EditorCombo({
           texto="Los productos que lo componen no se borran."
           className="mt-10 border-terracota/30"
         >
-          <form action={borrarCombo}>
+          <FormularioConfirmado
+            accion={borrarCombo}
+            mensaje={`¿Borrar el combo "${combo.name}"? Los productos que incluye no se borran.`}
+          >
             <input type="hidden" name="id" value={combo.id} />
             <button type="submit" className={estilosBoton("peligro", "sm")}>
               <Trash2 className="h-4 w-4" />
               Borrar definitivamente
             </button>
-          </form>
+          </FormularioConfirmado>
         </PanelAdmin>
       ) : null}
     </>
