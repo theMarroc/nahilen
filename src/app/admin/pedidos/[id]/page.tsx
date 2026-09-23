@@ -1,22 +1,18 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { ExternalLink, FileText, Trash2 } from "lucide-react";
+import { ExternalLink, FileText } from "lucide-react";
 
-import { borrarPedido, cambiarEstadoPedido } from "@/actions/admin/pedidos";
+import { BorrarPedido } from "@/components/admin/borrar-pedido";
+import { EstadoPedido } from "@/components/admin/estado-pedido";
 import { FilaDato, PanelAdmin, TituloAdmin } from "@/components/admin/piezas";
 import { estilosBoton } from "@/components/ui/boton";
-import { Insignia, Selector } from "@/components/ui/campos";
+import { Insignia } from "@/components/ui/campos";
 import { IconoWhatsapp } from "@/components/ui/marca";
 import { getAjustes } from "@/lib/db";
 import { ajuste, linkWhatsapp } from "@/lib/settings";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
-import {
-  ESTADOS_PEDIDO,
-  type Order,
-  type OrderItem,
-  type OrderStatus,
-} from "@/lib/types";
+import type { Order, OrderItem } from "@/lib/types";
 import { formatARS, formatFecha } from "@/lib/utils";
 
 export const metadata: Metadata = {
@@ -42,7 +38,6 @@ export default async function DetallePedido({
   if (!pedido) notFound();
 
   const ajustes = await getAjustes();
-  const estado = ESTADOS_PEDIDO[pedido.status];
 
   // El bucket de comprobantes es privado: generamos un link temporal.
   let urlComprobante: string | null = null;
@@ -171,26 +166,7 @@ export default async function DetallePedido({
 
         <div className="flex flex-col gap-6">
           <PanelAdmin titulo="Estado" className="h-fit">
-            <Insignia className={`${estado.clase} mb-4`}>{estado.label}</Insignia>
-
-            <form action={cambiarEstadoPedido} className="flex flex-col gap-3">
-              <input type="hidden" name="id" value={pedido.id} />
-              <Selector name="estado" defaultValue={pedido.status}>
-                {(Object.keys(ESTADOS_PEDIDO) as OrderStatus[]).map((clave) => (
-                  <option key={clave} value={clave}>
-                    {ESTADOS_PEDIDO[clave].label}
-                  </option>
-                ))}
-              </Selector>
-              <button type="submit" className={estilosBoton("primario", "sm")}>
-                Cambiar el estado
-              </button>
-            </form>
-
-            <p className="mt-3 text-xs leading-relaxed text-arena">
-              Si cancelás el pedido, las unidades vuelven al stock de los productos que lo
-              tengan controlado.
-            </p>
+            <EstadoPedido pedidoId={pedido.id} estadoInicial={pedido.status} />
           </PanelAdmin>
 
           <PanelAdmin titulo="Comprobante" className="h-fit">
@@ -221,16 +197,10 @@ export default async function DetallePedido({
           </PanelAdmin>
 
           <PanelAdmin titulo="Borrar" className="h-fit border-terracota/30">
-            <p className="text-sm leading-relaxed text-carbon/65">
+            <p className="mb-4 text-sm leading-relaxed text-carbon/65">
               Conviene cancelarlo en vez de borrarlo, así queda el registro.
             </p>
-            <form action={borrarPedido} className="mt-4">
-              <input type="hidden" name="id" value={pedido.id} />
-              <button type="submit" className={estilosBoton("peligro", "sm", "w-full")}>
-                <Trash2 className="h-4 w-4" />
-                Borrar el pedido
-              </button>
-            </form>
+            <BorrarPedido pedidoId={pedido.id} codigo={pedido.code} />
           </PanelAdmin>
         </div>
       </div>

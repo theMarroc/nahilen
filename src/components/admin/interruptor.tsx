@@ -50,7 +50,9 @@ export function Interruptor({
       >
         <span
           className={cn(
-            "absolute top-0.5 h-5 w-5 rounded-full bg-white shadow-sm transition-transform",
+            // left-0 es clave: sin él, la posición de partida es el centro del
+            // botón y la bolita se sale del carril al activarse.
+            "absolute left-0 top-0.5 h-5 w-5 rounded-full bg-white shadow-sm transition-transform",
             optimista ? "translate-x-5.5" : "translate-x-0.5",
           )}
         />

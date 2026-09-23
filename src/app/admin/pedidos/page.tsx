@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { FileCheck, Home, Store } from "lucide-react";
+import { CheckCircle2, FileCheck, Home, Store } from "lucide-react";
 
 import { PanelAdmin, SinDatos, TituloAdmin } from "@/components/admin/piezas";
 import { Insignia } from "@/components/ui/campos";
@@ -39,9 +39,9 @@ type FilaPedido = Pick<
 export default async function PedidosAdmin({
   searchParams,
 }: {
-  searchParams: Promise<{ estado?: string }>;
+  searchParams: Promise<{ estado?: string; borrado?: string }>;
 }) {
-  const { estado: filtro = "" } = await searchParams;
+  const { estado: filtro = "", borrado } = await searchParams;
   const supabase = await createClient();
 
   let consulta = supabase
@@ -67,6 +67,13 @@ export default async function PedidosAdmin({
         titulo="Pedidos"
         texto="Acá entran todos los pedidos de la web. Tocá uno para ver el detalle, el comprobante y cambiarle el estado."
       />
+
+      {borrado ? (
+        <p className="mb-5 flex items-center gap-2 rounded-marca border border-oliva/40 bg-oliva/10 px-4 py-3 text-sm text-oliva">
+          <CheckCircle2 className="h-4 w-4 shrink-0" strokeWidth={1.6} />
+          Se borró el pedido {borrado}.
+        </p>
+      ) : null}
 
       <div className="mb-5 flex flex-wrap gap-2">
         {FILTROS.map((opcion) => (
