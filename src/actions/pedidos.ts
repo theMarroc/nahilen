@@ -435,6 +435,11 @@ export async function subirComprobante(
     .upload(ruta, archivo, { contentType: archivo.type, upsert: false });
 
   if (errorSubida) {
+    console.error("[comprobante] falló la subida a Storage", {
+      pedido: pedido.code,
+      mensaje: errorSubida.message,
+      detalle: errorSubida,
+    });
     return { ok: false, mensaje: "No pudimos subir el archivo. Probá de nuevo." };
   }
 
