@@ -389,64 +389,131 @@ async function crearPreferencia(datos: DatosPreferencia): Promise<string | null>
   }
 }
 
-/** Sube el comprobante de transferencia desde la página del pedido. */
-export async function subirComprobante(
-  _anterior: { ok: boolean; mensaje: string } | null,
-  datos: FormData,
-): Promise<{ ok: boolean; mensaje: string }> {
+/* ==========================================================================
+   Comprobante de transferencia
+
+   El archivo NO pasa por una Server Action: Next corta esos pedidos en 1 MB
+   y Vercel en 4,5 MB, y una foto de celular pesa más. El flujo es:
+     1. prepararSubidaComprobante: valida el pedido y entrega una URL firmada.
+     2. El navegador achica la foto y la sube directo al bucket privado.
+     3. confirmarComprobante: verifica que el archivo llegó y actualiza el pedido.
+   ========================================================================== */
+
+/** Tipos aceptados y la extensión con la que se guardan. */
+const TIPOS_COMPROBANTE: Record<string, string> = {
+  "image/jpeg": "jpg",
+  "image/png": "png",
+  "image/webp": "webp",
+  "application/pdf": "pdf",
+};
+
+/** Peso máximo ya achicado. El bucket además rechaza todo lo que pase de 10 MB. */
+const PESO_MAXIMO_COMPROBANTE = 8 * 1024 * 1024;
+
+type RespuestaComprobante = { ok: boolean; mensaje: string };
+
+/** Busca el pedido y verifica el token secreto de su link. */
+async function pedidoDelLink(codigo: string, tokenPedido: string) {
+  const supabase = createAdminClient();
+  const { data: pedido } = await supabase
+    .from("orders")
+    .select("id, code, access_token, status, receipt_path")
+    .eq("code", codigo)
+    .maybeSingle();
+
+  if (!pedido || pedido.access_token !== tokenPedido) return null;
+  return pedido;
+}
+
+export async function prepararSubidaComprobante(
+  codigo: string,
+  tokenPedido: string,
+  archivo: { tipo: string; peso: number },
+): Promise<
+  | { ok: true; ruta: string; tokenSubida: string }
+  | { ok: false; mensaje: string }
+> {
   if (!supabaseConfigurado() || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
     return { ok: false, mensaje: "El sitio no está conectado a la base de datos." };
   }
 
-  const codigo = String(datos.get("codigo") ?? "");
-  const token = String(datos.get("token") ?? "");
-  const archivo = datos.get("archivo");
-
-  if (!(archivo instanceof File) || archivo.size === 0) {
-    return { ok: false, mensaje: "Elegí una imagen o un PDF del comprobante." };
+  const extension = TIPOS_COMPROBANTE[archivo.tipo];
+  if (!extension) {
+    return { ok: false, mensaje: "Solo aceptamos fotos (JPG, PNG, WEBP) o PDF." };
+  }
+  if (!(archivo.peso > 0)) {
+    return { ok: false, mensaje: "El archivo está vacío. Probá con otro." };
+  }
+  if (archivo.peso > PESO_MAXIMO_COMPROBANTE) {
+    return {
+      ok: false,
+      mensaje: "El archivo pesa más de 8 MB. Si es un PDF, probá con una captura de pantalla.",
+    };
   }
 
-  if (archivo.size > 8 * 1024 * 1024) {
-    return { ok: false, mensaje: "El archivo es muy grande (máximo 8 MB)." };
+  const pedido = await pedidoDelLink(codigo, tokenPedido);
+  if (!pedido) return { ok: false, mensaje: "No encontramos ese pedido." };
+
+  // La ruta la decide el servidor: el navegador no puede elegir dónde escribir.
+  const ruta = `${pedido.code}/${Date.now()}-${tokenAleatorio(6)}.${extension}`;
+
+  const { data, error } = await createAdminClient()
+    .storage.from("comprobantes")
+    .createSignedUploadUrl(ruta);
+
+  if (error || !data) {
+    console.error("[comprobante] no se pudo firmar la subida", {
+      pedido: pedido.code,
+      mensaje: error?.message,
+    });
+    return { ok: false, mensaje: "No pudimos preparar la subida. Probá de nuevo." };
   }
 
-  const tiposPermitidos = ["image/jpeg", "image/png", "image/webp", "application/pdf"];
-  if (!tiposPermitidos.includes(archivo.type)) {
-    return { ok: false, mensaje: "Solo aceptamos imágenes (JPG, PNG, WEBP) o PDF." };
+  return { ok: true, ruta: data.path, tokenSubida: data.token };
+}
+
+export async function confirmarComprobante(
+  codigo: string,
+  tokenPedido: string,
+  ruta: string,
+): Promise<RespuestaComprobante> {
+  if (!supabaseConfigurado() || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
+    return { ok: false, mensaje: "El sitio no está conectado a la base de datos." };
+  }
+
+  const pedido = await pedidoDelLink(codigo, tokenPedido);
+  if (!pedido) return { ok: false, mensaje: "No encontramos ese pedido." };
+
+  // Solo se aceptan archivos de la carpeta de este pedido.
+  if (!ruta.startsWith(`${pedido.code}/`) || ruta.includes("..")) {
+    return { ok: false, mensaje: "El archivo no corresponde a este pedido." };
   }
 
   const supabase = createAdminClient();
-
-  const { data: pedido } = await supabase
-    .from("orders")
-    .select("id, code, access_token")
-    .eq("code", codigo)
-    .maybeSingle();
-
-  if (!pedido || pedido.access_token !== token) {
-    return { ok: false, mensaje: "No encontramos ese pedido." };
+  const { data: existe } = await supabase.storage.from("comprobantes").exists(ruta);
+  if (!existe) {
+    return { ok: false, mensaje: "No encontramos el archivo subido. Probá de nuevo." };
   }
 
-  const extension = archivo.name.split(".").pop()?.toLowerCase() ?? "jpg";
-  const ruta = `${pedido.code}/${Date.now()}.${extension}`;
+  // Si ya estaba pagado o en preparación, no lo hacemos retroceder.
+  const cambios =
+    pedido.status === "pendiente_pago"
+      ? { receipt_path: ruta, status: "comprobante_enviado" }
+      : { receipt_path: ruta };
 
-  const { error: errorSubida } = await supabase.storage
-    .from("comprobantes")
-    .upload(ruta, archivo, { contentType: archivo.type, upsert: false });
-
-  if (errorSubida) {
-    console.error("[comprobante] falló la subida a Storage", {
+  const { error } = await supabase.from("orders").update(cambios).eq("id", pedido.id);
+  if (error) {
+    console.error("[comprobante] no se pudo guardar en el pedido", {
       pedido: pedido.code,
-      mensaje: errorSubida.message,
-      detalle: errorSubida,
+      mensaje: error.message,
     });
-    return { ok: false, mensaje: "No pudimos subir el archivo. Probá de nuevo." };
+    return { ok: false, mensaje: "No pudimos registrar el comprobante. Probá de nuevo." };
   }
 
-  await supabase
-    .from("orders")
-    .update({ receipt_path: ruta, status: "comprobante_enviado" })
-    .eq("id", pedido.id);
+  // Si lo reemplazó, el anterior ya no sirve: se borra para no ocupar espacio.
+  if (pedido.receipt_path && pedido.receipt_path !== ruta) {
+    await supabase.storage.from("comprobantes").remove([pedido.receipt_path]);
+  }
 
   revalidatePath(`/pedido/${pedido.code}`);
   revalidatePath("/admin/pedidos");

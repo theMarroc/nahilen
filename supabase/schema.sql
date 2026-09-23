@@ -523,9 +523,17 @@ insert into storage.buckets (id, name, public)
 values ('productos', 'productos', true)
 on conflict (id) do update set public = true;
 
-insert into storage.buckets (id, name, public)
-values ('comprobantes', 'comprobantes', false)
-on conflict (id) do update set public = false;
+-- Los comprobantes se suben desde el navegador con una URL firmada (no pasan
+-- por el servidor de la app), así que el límite lo pone el propio bucket.
+insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+values (
+  'comprobantes', 'comprobantes', false, 10485760,
+  array['image/jpeg', 'image/png', 'image/webp', 'application/pdf']
+)
+on conflict (id) do update set
+  public = false,
+  file_size_limit = excluded.file_size_limit,
+  allowed_mime_types = excluded.allowed_mime_types;
 
 drop policy if exists "imagenes de productos publicas" on storage.objects;
 create policy "imagenes de productos publicas" on storage.objects
